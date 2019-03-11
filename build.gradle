@@ -1,0 +1,21 @@
+apply plugin: 'java'
+apply plugin: 'application'
+
+repositories {
+    mavenLocal()
+    jcenter()
+}
+
+dependencies {
+    implementation 'org.apache.commons:commons-lang3:3.8.1'
+
+    testImplementation 'junit:junit:4.12'
+}
+
+group = 'com.github.anastasyann'
+version = '1.0-SNAPSHOT'
+
+application {
+    mainClassName = 'com.github.anastasyann.numberconverter.NumberConverter'
+}
+

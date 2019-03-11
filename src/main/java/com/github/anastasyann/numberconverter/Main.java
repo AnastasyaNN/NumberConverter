@@ -1,4 +1,6 @@
-package com.company;
+package com.github.anastasyann.numberconverter;
+
+import org.apache.commons.lang3.StringUtils;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -6,21 +8,30 @@ import java.util.Scanner;
 
 public class Main {
 
-    private static Map<Long, String> numberToWord = new HashMap<>();
-    private static Map<String, Long> wordToNumber = new HashMap<>();
+    private final static Map<Long, String> numberToWord = new HashMap<>();
+    private final static Map<String, Long> wordToNumber = new HashMap<>();
+
+    static {
+        fillNumberToWordMap();
+        fillWordToNumberMap();
+    }
     private static Scanner scanner = new Scanner(System.in);
 
     public static void main(String[] args) {
-        printMenu();
+
+        System.out.println("Please, input number:");
 
         String input = scanner.nextLine();
         Long number = null;
         String numberStr = "";
 
+        boolean isInputNumeric = false;
+
         if (isValidInput(input)) {
             System.out.println("Input: " + input);
             if (isNumber(input)) {
                 number = Long.parseLong(input);
+                isInputNumeric = true;
             } else {
                 numberStr = input;
             }
@@ -29,11 +40,9 @@ public class Main {
             return;
         }
 
-        if (number != null) {
-            fillNumberToWordMap();
+        if (isInputNumeric) {
             System.out.println(String.format("Output: %s", getWordsFromNumber(number)));
-        } else if (!numberStr.equals("")) {
-            fillWordToNumberMap();
+        } else {
             number = getNumberFromWords(numberStr);
             if (number == Long.MAX_VALUE) {
                 System.out.println("Invalid input!");
@@ -114,49 +123,49 @@ public class Main {
         wordToNumber.put("billion", 1_000_000_000L);
     }
 
-    private static Long getNumberFromWords(String string) {
-        string = skipEscapes(string);
+    private static Long getNumberFromWords(String wordInput) {
+        wordInput = wordInput.trim();
         boolean isNegative = false;
 
-        if (string.equals("zero")) {
+        if (wordInput.equals("zero")) {
             return wordToNumber.get("zero");
         }
 
-        if (string.contains("minus")) {
+        if (wordInput.contains("minus")) {
             isNegative = true;
-            string = string.substring("minus ".length());
+            wordInput = wordInput.substring("minus ".length());
         }
 
-        Long number = Long.parseLong("0");
+        Long number = 0L;
 
-        if (string.contains("billion")) {
-            Long currentNumber = getNumberLessThan1000FromWords(string.split(" billion ")[0]);
+        if (wordInput.contains("billion")) {
+            Long currentNumber = getNumberLessThan1000FromWords(wordInput.split(" billion ")[0]);
             if (currentNumber == Long.MAX_VALUE) {
                 return currentNumber;
             }
-            number = currentNumber * Math.round(Math.pow(10, 9));
+            number = currentNumber * 1_000_000_000;
 
-            string = string.substring(string.indexOf(" billion ") + " billion ".length());
+            wordInput = wordInput.substring(wordInput.indexOf(" billion ") + " billion ".length());
         }
-        if (string.contains("million")) {
-            Long currentNumber = getNumberLessThan1000FromWords(string.split(" million ")[0]);
+        if (wordInput.contains("million")) {
+            Long currentNumber = getNumberLessThan1000FromWords(wordInput.split(" million ")[0]);
             if (currentNumber == Long.MAX_VALUE) {
                 return currentNumber;
             }
-            number += currentNumber * Math.round(Math.pow(10, 6));
+            number += currentNumber * 1_000_000;
 
-            string = string.substring(string.indexOf(" million ") + " million ".length());
+            wordInput = wordInput.substring(wordInput.indexOf(" million ") + " million ".length());
         }
-        if (string.contains("thousand")) {
-            Long currentNumber = getNumberLessThan1000FromWords(string.split(" thousand ")[0]);
+        if (wordInput.contains("thousand")) {
+            Long currentNumber = getNumberLessThan1000FromWords(wordInput.split(" thousand ")[0]);
             if (currentNumber == Long.MAX_VALUE) {
                 return currentNumber;
             }
-            number += currentNumber * Math.round(Math.pow(10, 3));
+            number += currentNumber * 1_000;
 
-            string = string.substring(string.indexOf(" thousand ") + " thousand ".length());
+            wordInput = wordInput.substring(wordInput.indexOf(" thousand ") + " thousand ".length());
         }
-        Long currentNumber = getNumberLessThan1000FromWords(string);
+        Long currentNumber = getNumberLessThan1000FromWords(wordInput);
         if (currentNumber == Long.MAX_VALUE) {
             return currentNumber;
         }
@@ -231,7 +240,7 @@ public class Main {
             number = Math.abs(number);
         }
 
-        long billions = number / Math.round(Math.pow(10, 9));
+        long billions = number / 1_000_000_000;
         //System.out.println(billions);
         if (billions != 0) {
             stringBuilder.append(getWordsFromNumberLessThan1000(billions));
@@ -239,7 +248,7 @@ public class Main {
             stringBuilder.append(" ");
         }
 
-        long millions = (number % Math.round(Math.pow(10, 9))) / Math.round(Math.pow(10, 6));
+        long millions = (number % 1_000_000_000) / 1_000_000;
         //System.out.println(millions);
         if (millions != 0) {
             stringBuilder.append(getWordsFromNumberLessThan1000(millions));
@@ -247,7 +256,7 @@ public class Main {
             stringBuilder.append(" ");
         }
 
-        long thousands = (number % Math.round(Math.pow(10, 6))) / Math.round(Math.pow(10, 3));
+        long thousands = (number % 1_000_000) / 1_000;
         //System.out.println(thousands);
         if (thousands != 0) {
             stringBuilder.append(getWordsFromNumberLessThan1000(thousands));
@@ -255,7 +264,7 @@ public class Main {
             stringBuilder.append(" ");
         }
 
-        long hundreds = number % Math.round(Math.pow(10, 3));
+        long hundreds = number % 1_000;
         //System.out.println(hundreds);
         if (hundreds != 0) {
             stringBuilder.append(getWordsFromNumberLessThan1000(hundreds));
@@ -268,26 +277,31 @@ public class Main {
         StringBuilder stringBuilder = new StringBuilder();
 
         long hundreds = number / 100;
-        long tens = number % 100;
-        long units;
+        long tensWithUnits = number % 100;
+        long units = tensWithUnits % 10;
+        long tens = tensWithUnits / 10;
 
         if (hundreds != 0) {
             stringBuilder.append(numberToWord.get(hundreds));
             stringBuilder.append(" ");
             stringBuilder.append(numberToWord.get(100L));
             stringBuilder.append(" ");
-            if (tens != 0) {
+            if (tensWithUnits != 0) {
                 stringBuilder.append("and ");
             }
         }
-        if (tens != 0) {
-            if (tens <= 20) {
-                stringBuilder.append(numberToWord.get(tens));
-                stringBuilder.append(" ");
-            } else {
-                units = tens % 10;
-                tens = tens / 10 * 10;
-                stringBuilder.append(numberToWord.get(tens));
+
+        if (tensWithUnits == 0) {
+            return stringBuilder.toString();
+        }
+
+        if (tensWithUnits <= 20) {
+            stringBuilder.append(numberToWord.get(tensWithUnits));
+            stringBuilder.append(" ");
+        } else {
+            stringBuilder.append(numberToWord.get(tens * 10));
+
+            if (units != 0) {
                 stringBuilder.append("-");
                 stringBuilder.append(numberToWord.get(units));
                 stringBuilder.append(" ");
@@ -301,7 +315,7 @@ public class Main {
             long input = Long.parseLong(usersInput);
             return (Math.abs(input) < Math.pow(10, 12));
         }
-        return true;
+        return !StringUtils.isBlank(usersInput);
     }
 
     private static boolean isNumber(String usersInput) {
@@ -315,20 +329,5 @@ public class Main {
             }
         }
         return false;
-    }
-
-    private static void printMenu() {
-        System.out.println("Please, input number:");
-    }
-
-    private static String skipEscapes(String string) {
-        StringBuilder stringBuilder = new StringBuilder(string);
-        while (stringBuilder.charAt(0) == ' ') {
-            stringBuilder.delete(0, 1);
-        }
-        while (stringBuilder.charAt(stringBuilder.length() - 1) == ' ') {
-            stringBuilder.delete(stringBuilder.length() - 1, stringBuilder.length());
-        }
-        return stringBuilder.toString();
     }
 }
